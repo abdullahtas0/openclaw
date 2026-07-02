@@ -37,6 +37,10 @@ import { resolveSessionKey } from "../../config/sessions/session-key.js";
 import { resolveMaintenanceConfigFromInput } from "../../config/sessions/store-maintenance.js";
 import { runExclusiveSessionStoreWrite } from "../../config/sessions/store-writer.js";
 import {
+  isRecoverableTerminalSessionStatus,
+  recoverTerminalSessionEntryForVisibleTurn,
+} from "../../config/sessions/terminal-status.js";
+import {
   DEFAULT_RESET_TRIGGERS,
   type GroupKeyResolution,
   type SessionEntry,
@@ -71,13 +75,13 @@ import { parseSoftResetCommand } from "./commands-reset-mode.js";
 import { resolveConversationBindingContextFromMessage } from "./conversation-binding-input.js";
 import { normalizeInboundTextNewlines } from "./inbound-text.js";
 import { stripMentions, stripStructuralPrefixes } from "./mentions.js";
+import { replyRunRegistry } from "./reply-run-registry.js";
 import { isResetAuthorizedForContext } from "./reset-authorization.js";
 import {
   maybeRetireLegacyMainDeliveryRoute,
   resolveLastChannelRaw,
   resolveLastToRaw,
 } from "./session-delivery.js";
-import { replyRunRegistry } from "./reply-run-registry.js";
 import {
   createReplySessionEntryHandle,
   type ReplySessionEntryHandle,
@@ -157,21 +161,6 @@ function resolveStaleSessionEndReason(params: {
 function hasProviderOwnedSession(entry: SessionEntry | undefined): boolean {
   const provider = normalizeOptionalString(entry?.providerOverride ?? entry?.modelProvider);
   return Boolean(provider && getCliSessionBinding(entry, provider));
-}
-
-function isRecoverableTerminalSessionStatus(status: SessionEntry["status"] | undefined): boolean {
-  return status === "failed" || status === "timeout" || status === "killed";
-}
-
-function recoverTerminalSessionEntryForVisibleTurn(entry: SessionEntry): SessionEntry {
-  return {
-    ...entry,
-    status: undefined,
-    startedAt: undefined,
-    endedAt: undefined,
-    runtimeMs: undefined,
-    abortedLastRun: undefined,
-  };
 }
 
 export type SessionInitResult = {
